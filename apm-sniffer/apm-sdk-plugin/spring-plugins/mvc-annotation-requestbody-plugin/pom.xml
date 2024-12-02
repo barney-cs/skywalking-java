@@ -16,31 +16,43 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>apm-sdk-plugin</artifactId>
-        <groupId>org.apache.skywalking</groupId>
-        <version>8.16.0</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
-
+    <groupId>org.apache.skywalking</groupId>
     <artifactId>apm-springmvc-annotation-requestbody-plugin</artifactId>
+    <version>8.16.0</version>
     <packaging>jar</packaging>
 
     <name>mvc-annotation-requestbody-plugin</name>
     <url>http://maven.apache.org</url>
 
     <properties>
+        <skywalking.version>8.16.0</skywalking.version>
         <spring-core.version>5.0.0.RELEASE</spring-core.version>
         <spring-webmvc.version>5.0.0.RELEASE</spring-webmvc.version>
-        <javax-servlet-api.version>3.0.1</javax-servlet-api.version>
-        <spring-webflux.version>5.0.0.RELEASE</spring-webflux.version>
+        <shade.package>org.apache.skywalking.apm.dependencies</shade.package>
+        <shade.net.bytebuddy.source>net.bytebuddy</shade.net.bytebuddy.source>
+        <shade.net.bytebuddy.target>${shade.package}.${shade.net.bytebuddy.source}</shade.net.bytebuddy.target>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>apm-agent-core</artifactId>
+            <version>${skywalking.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>apm-util</artifactId>
+            <version>8.8.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring-core.version}</version>
+            <artifactId>spring-web</artifactId>
+            <version>${spring-webmvc.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -49,17 +61,41 @@
             <version>${spring-webmvc.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${javax-servlet-api.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.skywalking</groupId>
-            <artifactId>apm-springmvc-annotation-commons</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
+                            <relocations>
+                                <relocation>
+                                    <pattern>${shade.net.bytebuddy.source}</pattern>
+                                    <shadedPattern>${shade.net.bytebuddy.target}</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

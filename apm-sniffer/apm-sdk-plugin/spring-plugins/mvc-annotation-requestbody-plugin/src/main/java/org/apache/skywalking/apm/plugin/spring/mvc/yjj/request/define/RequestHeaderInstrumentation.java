@@ -1,32 +1,24 @@
-package org.apache.skywalking.apm.plugin.spring.mvc.requestbody.define;
+package org.apache.skywalking.apm.plugin.spring.mvc.yjj.request.define;
 
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.matcher.ElementMatcher;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.ConstructorInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.InstanceMethodsInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.ClassInstanceMethodsEnhancePluginDefine;
-import org.apache.skywalking.apm.agent.core.plugin.match.ClassAnnotationMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.ClassMatch;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
-import static org.apache.skywalking.apm.agent.core.plugin.match.MethodInheritanceAnnotationMatcher.byMethodInheritanceAnnotationMatcher;
+import static org.apache.skywalking.apm.agent.core.plugin.match.NameMatch.byName;
 
-public class ControllerRequestBodyInstrumentation extends ClassInstanceMethodsEnhancePluginDefine {
-
-    public static final String ENHANCE_ANNOTATION_CONTROLLER = "org.springframework.stereotype.Controller";
-    public static final String ENHANCE_ANNOTATION_REST_CONTROLLER = "org.springframework.web.bind.annotation.RestController";
-
+public class RequestHeaderInstrumentation extends ClassInstanceMethodsEnhancePluginDefine {
     @Override
     protected ClassMatch enhanceClass() {
-        return ClassAnnotationMatch.byClassAnnotationMatch(
-                ENHANCE_ANNOTATION_CONTROLLER,
-                ENHANCE_ANNOTATION_REST_CONTROLLER
-        );
+        return byName("org.springframework.web.method.support.InvocableHandlerMethod");
     }
 
     @Override
     public ConstructorInterceptPoint[] getConstructorsInterceptPoints() {
-        return null;
+        return new ConstructorInterceptPoint[0];
     }
 
     @Override
@@ -36,14 +28,12 @@ public class ControllerRequestBodyInstrumentation extends ClassInstanceMethodsEn
 
                     @Override
                     public ElementMatcher<MethodDescription> getMethodsMatcher() {
-
-                        return byMethodInheritanceAnnotationMatcher(named("org.springframework.web.bind.annotation.RequestMapping"))
-                                .or(byMethodInheritanceAnnotationMatcher(named("org.springframework.web.bind.annotation.PostMapping")));
+                        return named("invokeForRequest");
                     }
 
                     @Override
                     public String getMethodsInterceptor() {
-                        return "org.apache.skywalking.apm.plugin.spring.mvc.requestbody.ControllerRequestInterceptor";
+                        return "org.apache.skywalking.apm.plugin.spring.mvc.yjj.request.RequestHeaderInterceptor";
                     }
 
                     @Override
