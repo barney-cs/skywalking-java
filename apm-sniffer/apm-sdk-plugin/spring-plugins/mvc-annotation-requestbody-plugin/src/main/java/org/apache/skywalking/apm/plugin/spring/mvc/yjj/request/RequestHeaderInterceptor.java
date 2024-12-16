@@ -1,7 +1,6 @@
 package org.apache.skywalking.apm.plugin.spring.mvc.yjj.request;
 
 import org.apache.skywalking.apm.agent.core.context.ContextManager;
-import org.apache.skywalking.apm.agent.core.context.tag.StringTag;
 import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
 import org.apache.skywalking.apm.agent.core.context.trace.SpanLayer;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedInstance;
@@ -11,33 +10,44 @@ import org.apache.skywalking.apm.network.trace.component.ComponentsDefine;
 import org.apache.skywalking.apm.plugin.spring.mvc.yjj.request.constant.TraceConstants;
 import org.springframework.web.context.request.WebRequest;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 public class RequestHeaderInterceptor implements InstanceMethodsAroundInterceptor {
+
     @Override
     public void beforeMethod(EnhancedInstance enhancedInstance, Method method, Object[] allArgs, Class<?>[] classes, MethodInterceptResult methodInterceptResult) throws Throwable {
+        ContextManager.getRuntimeContext().put("startTime", System.currentTimeMillis());
     }
 
     @Override
     public Object afterMethod(EnhancedInstance enhancedInstance, Method method, Object[] allArgs, Class<?>[] classes, Object ret) {
         if (ContextManager.getRuntimeContext().get(TraceConstants.YJJ_HEADER_TAG) == null) {
-            AbstractSpan span = ContextManager.createLocalSpan(TraceConstants.YJJ_REQUEST_SPAN);
-            span.setComponent(ComponentsDefine.SPRING_MVC_ANNOTATION);
-            span.setLayer(SpanLayer.HTTP);
-            WebRequest webRequest = (WebRequest) allArgs[0];
-            StringBuilder headers = new StringBuilder("[");
-            webRequest.getHeaderNames().forEachRemaining(name -> headers.append("\"").append(name).append("\":\"").append(webRequest.getHeader(name)).append("\","));
-            headers.deleteCharAt(headers.length() - 1).append("]");
-            span.tag(new StringTag(TraceConstants.YJJ_HEADER_TAG), headers.toString());
-            ContextManager.stopSpan();
+            HttpServletRequest request = (HttpServletRequest) allArgs[0];
+            String type = request.getHeader(TraceConstants.YJJ_HEADER_CLIENT_TYPE_KEY);
+            String token = request.getHeader(TraceConstants.YJJ_HEADER_TOKEN_KEY);
+            if (Objects.nonNull(token) || Objects.nonNull(type)) {
+                AbstractSpan span = ContextManager.createLocalSpan(TraceConstants.YJJ_REQUEST_SPAN);
+                span.setComponent(ComponentsDefine.SPRING_MVC_ANNOTATION);
+                span.setLayer(SpanLayer.HTTP);
+                span.tag(TraceConstants.YJJ_HEADER_TAG,
+                        TraceConstants.YJJ_HEADER_CLIENT_TYPE_KEY + ':' + type + ','
+                        + TraceConstants.YJJ_HEADER_TOKEN_KEY + ':' + token);
+                ContextManager.stopSpan();
+            }
+        } else {
+            ContextManager.getRuntimeContext().remove(TraceConstants.YJJ_HEADER_TAG);
         }
         return ret;
     }
 
     @Override
-    public void handleMethodException(EnhancedInstance enhancedInstance, Method method, Object[] objects, Class<?>[] classes, Throwable throwable) {
-        AbstractSpan activeSpan = ContextManager.activeSpan();
-        activeSpan.log(throwable);
-        activeSpan.errorOccurred();
+    public void handleMethodException(EnhancedInstance enhancedInstance, Method method, Object[] objects, Class<?>[] classes, Throwable t) {
+        if (t != null) {
+            AbstractSpan activeSpan = ContextManager.activeSpan();
+            activeSpan.log(t);
+            activeSpan.errorOccurred();
+        }
     }
 }

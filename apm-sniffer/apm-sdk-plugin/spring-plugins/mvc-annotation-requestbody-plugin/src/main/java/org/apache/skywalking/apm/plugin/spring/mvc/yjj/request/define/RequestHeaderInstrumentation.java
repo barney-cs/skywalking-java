@@ -13,7 +13,7 @@ import static org.apache.skywalking.apm.agent.core.plugin.match.NameMatch.byName
 public class RequestHeaderInstrumentation extends ClassInstanceMethodsEnhancePluginDefine {
     @Override
     protected ClassMatch enhanceClass() {
-        return byName("org.springframework.web.method.support.InvocableHandlerMethod");
+        return byName("org.springframework.web.servlet.FrameworkServlet");
     }
 
     @Override
@@ -28,7 +28,7 @@ public class RequestHeaderInstrumentation extends ClassInstanceMethodsEnhancePlu
 
                     @Override
                     public ElementMatcher<MethodDescription> getMethodsMatcher() {
-                        return named("invokeForRequest");
+                        return named("processRequest");
                     }
 
                     @Override
