@@ -18,7 +18,6 @@ public class RequestHeaderInterceptor implements InstanceMethodsAroundIntercepto
 
     @Override
     public void beforeMethod(EnhancedInstance enhancedInstance, Method method, Object[] allArgs, Class<?>[] classes, MethodInterceptResult methodInterceptResult) throws Throwable {
-        ContextManager.getRuntimeContext().put("startTime", System.currentTimeMillis());
     }
 
     @Override
